@@ -2,7 +2,12 @@ import { getDefinition } from '../catalog';
 import { resolveDefinition } from '../engine/resolve';
 import { computeScore, emptyEntry } from '../engine/score';
 import { nextPlayerColor } from '../playerColors';
+import type { TallyEvent } from '../engine/types';
 import { db, type Player, type Session } from './db';
+
+export function makeTallyEvent(amount: number, categoryId?: string): TallyEvent {
+  return { id: crypto.randomUUID(), amount, categoryId, at: Date.now() };
+}
 
 export async function createPlayer(name: string): Promise<Player> {
   const player: Player = {

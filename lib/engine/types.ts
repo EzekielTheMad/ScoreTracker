@@ -84,6 +84,8 @@ export interface ExpansionPatch {
   addFields?: FieldDef[];
   /** Base fields removed from the sheet. */
   removeFieldIds?: string[];
+  /** New player cap (Skullport raises Waterdeep to 6). */
+  maxPlayers?: number;
 }
 
 export interface GameDefinition {

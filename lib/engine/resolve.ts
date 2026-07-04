@@ -16,12 +16,16 @@ export function resolveDefinition(
   }
 
   let fields = [...def.fields];
+  let maxPlayers = def.maxPlayers;
   for (const patch of enabled) {
     if (patch.removeFieldIds) {
       fields = fields.filter((f) => !patch.removeFieldIds!.includes(f.id));
     }
     if (patch.addFields) {
       fields = [...fields, ...patch.addFields];
+    }
+    if (patch.maxPlayers !== undefined) {
+      maxPlayers = patch.maxPlayers;
     }
   }
 
@@ -38,7 +42,7 @@ export function resolveDefinition(
     versionKey,
     mode: def.mode,
     minPlayers: def.minPlayers,
-    maxPlayers: def.maxPlayers,
+    maxPlayers,
     fields,
     tally: def.tally,
   };

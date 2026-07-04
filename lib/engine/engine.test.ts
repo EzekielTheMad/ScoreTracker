@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { getCalculator } from './calculators';
 import { resolveDefinition } from './resolve';
 import { computeScore, emptyEntry, scoreField } from './score';
+import { carcassonne } from '../catalog/carcassonne';
 import { sevenWonders } from '../catalog/seven-wonders';
+import { waterdeep } from '../catalog/waterdeep';
 import type { GameDefinition, PlayerEntry } from './types';
 
 const science = getCalculator('seven-wonders-science');
@@ -127,6 +129,62 @@ describe('computeScore', () => {
     const result = computeScore(def, entry);
     expect(result.tally).toBe(11);
     expect(result.total).toBe(11);
+  });
+});
+
+describe('Carcassonne (pure tally)', () => {
+  it('scores as the sum of tally events, no fields', () => {
+    const def = resolveDefinition(carcassonne, []);
+    expect(def.fields).toEqual([]);
+    const entry: PlayerEntry = {
+      ...emptyEntry('p1'),
+      tallyEvents: [
+        { id: 'a', amount: 3, categoryId: 'road', at: 1 },
+        { id: 'b', amount: 8, categoryId: 'city', at: 2 },
+        { id: 'c', amount: 9, categoryId: 'monastery', at: 3 },
+        { id: 'd', amount: 12, categoryId: 'farm', at: 4 },
+      ],
+    };
+    expect(computeScore(def, entry).total).toBe(32);
+  });
+});
+
+describe('Lords of Waterdeep (hybrid)', () => {
+  it('totals live tally plus end-game bonuses', () => {
+    const def = resolveDefinition(waterdeep, []);
+    const entry: PlayerEntry = {
+      playerId: 'p1',
+      values: { lord: 25, gold: 7, adventurers: 4 }, // 25 + 3 + 4
+      calcInputs: {},
+      tallyEvents: [
+        { id: 'a', amount: 8, categoryId: 'quest', at: 1 },
+        { id: 'b', amount: 6, categoryId: 'building', at: 2 },
+      ],
+    };
+    const result = computeScore(def, entry);
+    expect(result.perField).toEqual({ lord: 25, gold: 3, adventurers: 4 });
+    expect(result.tally).toBe(14);
+    expect(result.total).toBe(46);
+  });
+
+  it('Skullport raises the player cap to 6 and adds corruption', () => {
+    expect(resolveDefinition(waterdeep, []).maxPlayers).toBe(5);
+    const resolved = resolveDefinition(waterdeep, ['skullport']);
+    expect(resolved.maxPlayers).toBe(6);
+    const corruption = resolved.fields.find((f) => f.id === 'corruption');
+    expect(corruption).toMatchObject({ kind: 'calculated', unverified: true });
+  });
+
+  // Documents the PLACEHOLDER only. The real Skullport rule scales the
+  // per-token penalty with the corruption track; verify vs the rulebook
+  // before trusting this (see calculators.ts).
+  it('STUB: corruption placeholder charges -1 per token', () => {
+    const resolved = resolveDefinition(waterdeep, ['skullport']);
+    const entry: PlayerEntry = {
+      ...emptyEntry('p1'),
+      calcInputs: { corruption: { tokens: 5 } },
+    };
+    expect(computeScore(resolved, entry).perField.corruption).toBe(-5);
   });
 });
 

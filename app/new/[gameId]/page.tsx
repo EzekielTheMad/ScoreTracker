@@ -6,6 +6,7 @@ import { useState } from "react";
 import { getDefinition } from "@/lib/catalog";
 import { db } from "@/lib/db/db";
 import { addGameToCollection, createPlayer, createSession } from "@/lib/db/repo";
+import { resolveDefinition } from "@/lib/engine/resolve";
 
 export default function NewGamePage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -45,8 +46,10 @@ export default function NewGamePage() {
     setNewName("");
   }
 
+  // Expansions can raise the player cap (Skullport allows a 6th player).
+  const { maxPlayers } = resolveDefinition(def, expansionIds);
   const canStart =
-    selected.length >= def.minPlayers && selected.length <= def.maxPlayers && !starting;
+    selected.length >= def.minPlayers && selected.length <= maxPlayers && !starting;
 
   async function start() {
     if (!canStart || !players) return;
@@ -161,8 +164,8 @@ export default function NewGamePage() {
           >
             {selected.length < def.minPlayers
               ? `Pick at least ${def.minPlayers} players`
-              : selected.length > def.maxPlayers
-                ? `Max ${def.maxPlayers} players`
+              : selected.length > maxPlayers
+                ? `Max ${maxPlayers} players`
                 : "Start game"}
           </button>
         </div>

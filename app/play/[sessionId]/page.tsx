@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ScoreGrid } from "@/components/ScoreGrid";
+import { TallyBoard } from "@/components/TallyBoard";
 import { db, type Session } from "@/lib/db/db";
-import { finishSession } from "@/lib/db/repo";
+import { finishSession, makeTallyEvent } from "@/lib/db/repo";
 import { computeScore } from "@/lib/engine/score";
 
 export default function PlayPage() {
@@ -64,6 +65,49 @@ export default function PlayPage() {
     }));
   }
 
+  function addTallyEvent(playerId: string, amount: number, categoryId?: string) {
+    update((s) => ({
+      ...s,
+      entries: {
+        ...s.entries,
+        [playerId]: {
+          ...s.entries[playerId],
+          tallyEvents: [
+            ...s.entries[playerId].tallyEvents,
+            makeTallyEvent(amount, categoryId),
+          ],
+        },
+      },
+    }));
+  }
+
+  /** Undo the most recent tally event across all players. */
+  function undoLastEvent() {
+    update((s) => {
+      let lastPid: string | null = null;
+      let lastAt = -1;
+      for (const pid of s.playerIds) {
+        const events = s.entries[pid].tallyEvents;
+        const last = events[events.length - 1];
+        if (last && last.at > lastAt) {
+          lastAt = last.at;
+          lastPid = pid;
+        }
+      }
+      if (!lastPid) return s;
+      return {
+        ...s,
+        entries: {
+          ...s.entries,
+          [lastPid]: {
+            ...s.entries[lastPid],
+            tallyEvents: s.entries[lastPid].tallyEvents.slice(0, -1),
+          },
+        },
+      };
+    });
+  }
+
   async function finish() {
     if (!session) return;
     if (!window.confirm("Finish game and record the result?")) return;
@@ -88,7 +132,7 @@ export default function PlayPage() {
   }
 
   return (
-    <main className="flex-1 pt-safe px-safe pb-32">
+    <main className="flex-1 pt-safe px-safe pb-44">
       <div className="px-3 pt-3 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           <Link href="/" className="text-ink-dim text-sm py-2 pr-3">
@@ -98,7 +142,17 @@ export default function PlayPage() {
           <span className="text-sm text-ink-dim">{session.playerIds.length}p</span>
         </div>
 
-        <ScoreGrid session={session} onSetValue={setValue} onSetCalcInput={setCalcInput} />
+        {session.definition.mode !== "endgame" && (
+          <TallyBoard session={session} onAdd={addTallyEvent} />
+        )}
+        {session.definition.mode === "hybrid" && (
+          <h2 className="text-sm font-semibold text-ink-dim uppercase tracking-wide mt-6 mb-1">
+            End-game scoring
+          </h2>
+        )}
+        {session.definition.mode !== "tally" && (
+          <ScoreGrid session={session} onSetValue={setValue} onSetCalcInput={setCalcInput} />
+        )}
       </div>
 
       <div className="fixed bottom-0 inset-x-0 bg-surface/95 backdrop-blur border-t border-edge p-4 pb-safe px-safe">
@@ -122,12 +176,22 @@ export default function PlayPage() {
               </span>
             ))}
           </div>
-          <button
-            onClick={finish}
-            className="w-full bg-accent text-black text-lg font-bold rounded-2xl py-4 active:scale-[0.99]"
-          >
-            Finish game
-          </button>
+          <div className="flex gap-3">
+            {session.definition.mode !== "endgame" && (
+              <button
+                onClick={undoLastEvent}
+                className="bg-card border border-edge font-bold rounded-2xl py-4 px-5 active:scale-[0.99]"
+              >
+                ↶ Undo
+              </button>
+            )}
+            <button
+              onClick={finish}
+              className="flex-1 bg-accent text-black text-lg font-bold rounded-2xl py-4 active:scale-[0.99]"
+            >
+              Finish game
+            </button>
+          </div>
         </div>
       </div>
     </main>
