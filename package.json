@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "next": "16.2.10",
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "fake-indexeddb": "^6.2.5",
     "sharp": "^0.35.3",
     "tailwindcss": "^4",
     "typescript": "^5",

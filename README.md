@@ -2,7 +2,7 @@
 
 Offline-first PWA for tracking board game scores at the table. IndexedDB
 (Dexie) is the local source of truth — everything works with zero network.
-Supabase sync is scaffolded behind a feature flag but not wired yet.
+Supabase sync layers on top for cross-device backup (see Sync below).
 
 ## Stack
 
@@ -37,6 +37,27 @@ runs the right math from a **versioned game definition** (`lib/catalog/`):
 Two data concepts: the bundled **catalog** of definitions ships in the
 build; the per-user **collection** is the games you've added from it.
 Players are saved profiles, not logins.
+
+## Sync
+
+`lib/sync/` pushes and pulls whole records (players, collection,
+sessions) to a single `sync_records` table in Supabase, keyed
+`(user_id, kind, id)` with millisecond timestamps:
+
+- Last-write-wins on `updatedAt`, enforced client-side on pull and
+  server-side by the `upsert_sync_records` RPC on push, so a stale
+  device can never clobber newer data.
+- Deletes are tombstones (`deletedAt`) so other devices observe them.
+- Row Level Security scopes every row to its owner; the publishable key
+  in `lib/sync/config.ts` is safe to ship (override via
+  `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+- Sign-in is email + password from the Sync tab — profiles exist only
+  to name a sync bucket. Everything works signed out; syncs run a few
+  seconds after each change, on app focus, and via "Sync now".
+- Kill switch: build with `NEXT_PUBLIC_SYNC_ENABLED=false`.
+
+The engine (`lib/sync/engine.ts`) is remote-agnostic and tested against
+a fake remote with `fake-indexeddb` (`npm test`).
 
 ## PWA
 

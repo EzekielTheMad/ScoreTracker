@@ -11,6 +11,7 @@ export default function HistoryPage() {
       db.sessions
         .where("status")
         .equals("finished")
+        .filter((s) => !s.deletedAt)
         .reverse()
         .sortBy("finishedAt")
         .then((list) => list.reverse()),

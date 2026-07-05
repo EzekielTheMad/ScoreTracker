@@ -13,7 +13,10 @@ export default function NewGamePage() {
   const router = useRouter();
   const def = getDefinition(gameId);
 
-  const players = useLiveQuery(() => db.players.orderBy("createdAt").toArray(), []);
+  const players = useLiveQuery(
+    () => db.players.orderBy("createdAt").filter((p) => !p.deletedAt).toArray(),
+    [],
+  );
   const collectionItem = useLiveQuery(() => db.collection.get(gameId), [gameId]);
 
   // null = untouched, fall back to the collection's saved defaults.

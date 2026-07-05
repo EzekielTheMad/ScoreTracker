@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { ScoreGrid } from "@/components/ScoreGrid";
 import { TallyBoard } from "@/components/TallyBoard";
 import { db, type Session } from "@/lib/db/db";
-import { finishSession, makeTallyEvent } from "@/lib/db/repo";
+import { finishSession, makeTallyEvent, saveSession } from "@/lib/db/repo";
 import { computeScore } from "@/lib/engine/score";
 
 export default function PlayPage() {
@@ -20,12 +20,10 @@ export default function PlayPage() {
 
   /** Mutate in React state for instant typing, write through to IndexedDB. */
   function update(mutate: (s: Session) => Session) {
-    setSession((prev) => {
-      if (!prev) return prev;
-      const next = mutate(prev);
-      db.sessions.put(next);
-      return next;
-    });
+    if (!session) return;
+    const next = mutate(session);
+    setSession(next);
+    void saveSession(next);
   }
 
   function setValue(playerId: string, fieldId: string, value: number | undefined) {

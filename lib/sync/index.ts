@@ -1,23 +1,53 @@
 /**
- * Supabase sync scaffold — NOT WIRED YET.
- *
- * IndexedDB (lib/db) is the local source of truth; sync is a later layer
- * that pushes/pulls players, collection, and sessions behind a feature
- * flag. Nothing imports this module from app code while the flag is off.
+ * Public sync API. IndexedDB (lib/db) is the local source of truth; this
+ * layer pushes/pulls per-user records to Supabase behind SYNC_ENABLED.
+ * Mutations call queueSync() (via lib/db/repo) so changes trickle up a
+ * few seconds after the table quiets down; pulls run on app focus and
+ * from the Sync page.
  */
+import { getCurrentUser, getSupabase, supabaseRemote } from './client';
+import { runSync } from './engine';
 
-export const SYNC_ENABLED = process.env.NEXT_PUBLIC_SYNC_ENABLED === 'true';
+export { SYNC_ENABLED } from './config';
+export {
+  getCurrentUser,
+  onAuthChange,
+  signIn,
+  signOut,
+  signUp,
+} from './client';
 
-export interface SyncEngine {
-  /** Push local changes since the last sync, pull remote ones, reconcile. */
-  sync(): Promise<void>;
+export type SyncResult = { ok: true } | { ok: false; error: string };
+
+let inFlight: Promise<SyncResult> | null = null;
+
+export function syncNow(): Promise<SyncResult> {
+  // Coalesce concurrent calls; runSync isn't reentrant-safe on cursors.
+  inFlight ??= (async () => {
+    try {
+      const sb = getSupabase();
+      if (!sb) return { ok: false as const, error: 'Sync is disabled in this build' };
+      if (!(await getCurrentUser())) {
+        return { ok: false as const, error: 'Not signed in' };
+      }
+      await runSync(supabaseRemote(sb));
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
+    } finally {
+      inFlight = null;
+    }
+  })();
+  return inFlight;
 }
 
-export function createSyncEngine(): SyncEngine {
-  if (!SYNC_ENABLED) {
-    throw new Error('Sync is behind NEXT_PUBLIC_SYNC_ENABLED and not wired yet');
-  }
-  // TODO: Supabase client + table mapping (players, collection, sessions),
-  // last-write-wins on updatedAt, definition snapshots stored as JSON.
-  throw new Error('Supabase sync not implemented yet');
+let queueTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Debounced background sync; a no-op when signed out or offline. */
+export function queueSync(delayMs = 2500): void {
+  if (typeof window === 'undefined') return;
+  clearTimeout(queueTimer);
+  queueTimer = setTimeout(() => {
+    if (navigator.onLine !== false) void syncNow();
+  }, delayMs);
 }

@@ -38,16 +38,23 @@ registerCalculator('seven-wonders-science', (inputs) => {
 });
 
 /**
- * STUB — Lords of Waterdeep: Scoundrels of Skullport corruption penalty.
- *
- * TODO(verify): the real rule scales the per-token penalty by the state of
- * the corruption track at game end; this placeholder charges a flat
- * -1 point per corruption token, which is NOT the rulebook formula.
- * Verify against the Scoundrels of Skullport rulebook before trusting
- * totals that include corruption. The field that uses this calculator is
- * marked `unverified` so the UI shows a warning.
+ * LEGACY — the original Skullport corruption placeholder (-1 per token).
+ * Kept registered so sessions recorded against skullport@1 snapshots
+ * still recompute; new definitions use skullport-corruption-track.
  */
 registerCalculator('skullport-corruption', (inputs) => {
   const tokens = inputs.tokens ?? 0;
   return -1 * tokens;
+});
+
+/**
+ * Lords of Waterdeep: Scoundrels of Skullport corruption penalty.
+ * Each corruption token scores minus the value of the highest empty
+ * space on the corruption track; players read that value off the board
+ * and enter it alongside their token count.
+ */
+registerCalculator('skullport-corruption-track', (inputs) => {
+  const tokens = inputs.tokens ?? 0;
+  const perToken = Math.abs(inputs.perToken ?? 0);
+  return -1 * tokens * perToken;
 });

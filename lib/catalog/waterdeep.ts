@@ -3,8 +3,7 @@ import type { GameDefinition } from '../engine/types';
 /**
  * Lords of Waterdeep — hybrid: the VP track runs as a live tally during
  * play, then end-game bonuses are filled in. Scoundrels of Skullport adds
- * the corruption penalty (calculator is a STUB — see calculators.ts) and
- * a sixth player.
+ * the corruption penalty and a sixth player.
  */
 export const waterdeep: GameDefinition = {
   id: 'waterdeep',
@@ -50,7 +49,7 @@ export const waterdeep: GameDefinition = {
     {
       id: 'skullport',
       name: 'Scoundrels of Skullport',
-      version: 1,
+      version: 2,
       maxPlayers: 6,
       addFields: [
         {
@@ -58,10 +57,12 @@ export const waterdeep: GameDefinition = {
           id: 'corruption',
           label: 'Corruption',
           color: '#b91c1c',
-          hint: 'STUB: −1 per token — verify vs rulebook',
-          inputs: [{ id: 'tokens', label: 'Tokens' }],
-          calculator: 'skullport-corruption',
-          unverified: true,
+          hint: 'Each token scores minus the highest empty space on the corruption track',
+          inputs: [
+            { id: 'tokens', label: 'Tokens' },
+            { id: 'perToken', label: 'Space' },
+          ],
+          calculator: 'skullport-corruption-track',
         },
       ],
     },

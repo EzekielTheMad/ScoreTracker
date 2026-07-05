@@ -171,20 +171,29 @@ describe('Lords of Waterdeep (hybrid)', () => {
     expect(resolveDefinition(waterdeep, []).maxPlayers).toBe(5);
     const resolved = resolveDefinition(waterdeep, ['skullport']);
     expect(resolved.maxPlayers).toBe(6);
+    expect(resolved.versionKey).toBe('waterdeep@1+skullport@2');
     const corruption = resolved.fields.find((f) => f.id === 'corruption');
-    expect(corruption).toMatchObject({ kind: 'calculated', unverified: true });
+    expect(corruption).toMatchObject({
+      kind: 'calculated',
+      calculator: 'skullport-corruption-track',
+    });
   });
 
-  // Documents the PLACEHOLDER only. The real Skullport rule scales the
-  // per-token penalty with the corruption track; verify vs the rulebook
-  // before trusting this (see calculators.ts).
-  it('STUB: corruption placeholder charges -1 per token', () => {
+  it('corruption: each token scores minus the highest empty track space', () => {
     const resolved = resolveDefinition(waterdeep, ['skullport']);
-    const entry: PlayerEntry = {
+    const withTrack = (tokens: number, perToken: number): PlayerEntry => ({
       ...emptyEntry('p1'),
-      calcInputs: { corruption: { tokens: 5 } },
-    };
-    expect(computeScore(resolved, entry).perField.corruption).toBe(-5);
+      calcInputs: { corruption: { tokens, perToken } },
+    });
+    expect(computeScore(resolved, withTrack(5, 1)).perField.corruption).toBe(-5);
+    expect(computeScore(resolved, withTrack(4, 3)).perField.corruption).toBe(-12);
+    expect(computeScore(resolved, withTrack(0, 9)).perField.corruption).toBe(-0);
+    // Forgiving if the track value is entered as a negative number.
+    expect(computeScore(resolved, withTrack(2, -3)).perField.corruption).toBe(-6);
+  });
+
+  it('keeps the legacy skullport@1 calculator for old snapshots', () => {
+    expect(getCalculator('skullport-corruption')({ tokens: 4 })).toBe(-4);
   });
 });
 

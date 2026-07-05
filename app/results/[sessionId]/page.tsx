@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { db, type Session } from "@/lib/db/db";
-import { rematchSession } from "@/lib/db/repo";
+import { deleteSession, rematchSession } from "@/lib/db/repo";
 import { computeScore } from "@/lib/engine/score";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -53,7 +53,7 @@ export default function ResultsPage() {
   async function deleteResult() {
     if (!session) return;
     if (!window.confirm("Delete this result permanently?")) return;
-    await db.sessions.delete(session.id);
+    await deleteSession(session);
     router.replace("/history");
   }
 

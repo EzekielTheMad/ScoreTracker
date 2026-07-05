@@ -4,10 +4,13 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { db } from "@/lib/db/db";
-import { createPlayer } from "@/lib/db/repo";
+import { createPlayer, deletePlayer, renamePlayer } from "@/lib/db/repo";
 
 export default function PlayersPage() {
-  const players = useLiveQuery(() => db.players.orderBy("createdAt").toArray(), []);
+  const players = useLiveQuery(
+    () => db.players.orderBy("createdAt").filter((p) => !p.deletedAt).toArray(),
+    [],
+  );
   const [name, setName] = useState("");
 
   async function addPlayer() {
@@ -17,14 +20,14 @@ export default function PlayersPage() {
     setName("");
   }
 
-  async function renamePlayer(id: string, current: string) {
+  async function handleRename(id: string, current: string) {
     const next = window.prompt("Rename player", current)?.trim();
-    if (next && next !== current) await db.players.update(id, { name: next });
+    if (next && next !== current) await renamePlayer(id, next);
   }
 
-  async function deletePlayer(id: string, playerName: string) {
+  async function handleDelete(id: string, playerName: string) {
     if (window.confirm(`Remove ${playerName}? Past results keep their name.`)) {
-      await db.players.delete(id);
+      await deletePlayer(id);
     }
   }
 
@@ -68,13 +71,13 @@ export default function PlayersPage() {
                 {p.name.slice(0, 1).toUpperCase()}
               </span>
               <button
-                onClick={() => renamePlayer(p.id, p.name)}
+                onClick={() => handleRename(p.id, p.name)}
                 className="flex-1 text-left text-lg font-semibold py-2"
               >
                 {p.name}
               </button>
               <button
-                onClick={() => deletePlayer(p.id, p.name)}
+                onClick={() => handleDelete(p.id, p.name)}
                 className="text-ink-dim px-3 py-2 text-xl"
                 aria-label={`Remove ${p.name}`}
               >

@@ -8,9 +8,16 @@ import { db } from "@/lib/db/db";
 import { addGameToCollection } from "@/lib/db/repo";
 
 export default function HomePage() {
-  const collection = useLiveQuery(() => db.collection.toArray(), []) ?? [];
+  const collection =
+    useLiveQuery(() => db.collection.filter((c) => !c.deletedAt).toArray(), []) ?? [];
   const active = useLiveQuery(
-    () => db.sessions.where("status").equals("active").reverse().sortBy("startedAt"),
+    () =>
+      db.sessions
+        .where("status")
+        .equals("active")
+        .filter((s) => !s.deletedAt)
+        .reverse()
+        .sortBy("startedAt"),
     [],
   );
   const collectedIds = new Set(collection.map((c) => c.gameId));
