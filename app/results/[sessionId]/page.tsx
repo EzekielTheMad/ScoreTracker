@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { db, type Session } from "@/lib/db/db";
-import { deleteSession, rematchSession } from "@/lib/db/repo";
-import { computeScore } from "@/lib/engine/score";
+import { deleteSession, rematchSession, reopenSession } from "@/lib/db/repo";
+import { computeScore, tallyByCategory } from "@/lib/engine/score";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -48,6 +48,12 @@ export default function ResultsPage() {
     if (!session) return;
     const next = await rematchSession(session);
     router.replace(`/play/${next.id}`);
+  }
+
+  async function reopen() {
+    if (!session) return;
+    await reopenSession(session);
+    router.replace(`/play/${session.id}`);
   }
 
   async function deleteResult() {
@@ -136,22 +142,45 @@ export default function ResultsPage() {
                     ))}
                   </tr>
                 ))}
-                {session.definition.mode !== "endgame" && (
-                  <tr>
-                    <th className="text-left py-1.5 pr-2 font-medium">During play</th>
-                    {standings.map((pid) => (
-                      <td key={pid} className="px-2 py-1.5 text-center tabular-nums">
-                        {breakdowns[pid].tally}
-                      </td>
-                    ))}
-                  </tr>
-                )}
+                {session.definition.mode !== "endgame" &&
+                  (() => {
+                    const perPlayer = Object.fromEntries(
+                      standings.map((pid) => [
+                        pid,
+                        tallyByCategory(session.entries[pid]),
+                      ]),
+                    );
+                    const rows = [
+                      ...(session.definition.tally?.categories ?? []),
+                      { id: "", label: "Other", color: undefined },
+                    ].filter((cat) =>
+                      standings.some((pid) => perPlayer[pid][cat.id]),
+                    );
+                    return rows.map((cat) => (
+                      <tr key={cat.id || "other"}>
+                        <th
+                          className="text-left py-1.5 pr-2 font-medium"
+                          style={{ color: cat.color }}
+                        >
+                          {cat.label}
+                        </th>
+                        {standings.map((pid) => (
+                          <td key={pid} className="px-2 py-1.5 text-center tabular-nums">
+                            {perPlayer[pid][cat.id] ?? 0}
+                          </td>
+                        ))}
+                      </tr>
+                    ));
+                  })()}
               </tbody>
             </table>
           </div>
         )}
 
-        <button onClick={deleteResult} className="block text-red-400/80 text-sm py-2 mt-4">
+        <button onClick={reopen} className="block text-accent text-sm py-2 mt-4">
+          ✎ Reopen game (finished by mistake?)
+        </button>
+        <button onClick={deleteResult} className="block text-red-400/80 text-sm py-2">
           Delete result
         </button>
       </div>

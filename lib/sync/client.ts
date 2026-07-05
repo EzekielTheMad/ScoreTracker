@@ -104,3 +104,30 @@ export async function signIn(
 export async function signOut(): Promise<void> {
   await getSupabase()?.auth.signOut();
 }
+
+/**
+ * Emails a recovery link that lands on /reset-password. The redirect URL
+ * must be allowed in the Supabase project's auth URL configuration.
+ */
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: 'Sync is disabled in this build' };
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Set a new password inside the recovery session the email link opens. */
+export async function updatePassword(
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: 'Sync is disabled in this build' };
+  const { error } = await sb.auth.updateUser({ password });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

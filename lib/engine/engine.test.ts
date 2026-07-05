@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getCalculator } from './calculators';
 import { resolveDefinition } from './resolve';
-import { computeScore, emptyEntry, scoreField } from './score';
+import { computeScore, emptyEntry, scoreField, tallyByCategory } from './score';
 import { carcassonne } from '../catalog/carcassonne';
 import { sevenWonders } from '../catalog/seven-wonders';
 import { waterdeep } from '../catalog/waterdeep';
@@ -146,6 +146,19 @@ describe('Carcassonne (pure tally)', () => {
       ],
     };
     expect(computeScore(def, entry).total).toBe(32);
+  });
+
+  it('groups tally points by category, uncategorized under ""', () => {
+    const entry: PlayerEntry = {
+      ...emptyEntry('p1'),
+      tallyEvents: [
+        { id: 'a', amount: 3, categoryId: 'road', at: 1 },
+        { id: 'b', amount: 8, categoryId: 'city', at: 2 },
+        { id: 'c', amount: 4, categoryId: 'city', at: 3 },
+        { id: 'd', amount: 2, at: 4 },
+      ],
+    };
+    expect(tallyByCategory(entry)).toEqual({ road: 3, city: 12, '': 2 });
   });
 });
 

@@ -109,6 +109,16 @@ export async function finishSession(session: Session): Promise<Session> {
   });
 }
 
+/** Undo an accidental finish: back to active, scores intact. */
+export async function reopenSession(session: Session): Promise<Session> {
+  return saveSession({
+    ...session,
+    status: 'active',
+    finishedAt: undefined,
+    totals: undefined,
+  });
+}
+
 export async function deleteSession(session: Session): Promise<void> {
   const now = Date.now();
   await db.sessions.update(session.id, { deletedAt: now, updatedAt: now });

@@ -9,6 +9,7 @@ import {
   SYNC_ENABLED,
   getCurrentUser,
   onAuthChange,
+  requestPasswordReset,
   signIn,
   signOut,
   signUp,
@@ -44,6 +45,22 @@ export default function SyncPage() {
       setPassword("");
       void runSync();
     }
+  }
+
+  async function forgotPassword() {
+    if (!email.trim()) {
+      setMessage("Enter your email above first, then tap Forgot password.");
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    const result = await requestPasswordReset(email.trim());
+    setBusy(false);
+    setMessage(
+      result.ok
+        ? "Reset link sent — check your email."
+        : result.error,
+    );
   }
 
   async function runSync() {
@@ -134,6 +151,16 @@ export default function SyncPage() {
                 ? "Have an account? Sign in"
                 : "First device? Create an account"}
             </button>
+            {!creating && (
+              <button
+                type="button"
+                onClick={forgotPassword}
+                disabled={busy}
+                className="text-ink-dim text-sm py-1"
+              >
+                Forgot password?
+              </button>
+            )}
           </form>
         )}
 

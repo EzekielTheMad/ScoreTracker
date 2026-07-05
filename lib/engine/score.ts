@@ -25,6 +25,16 @@ export function tallyTotal(entry: PlayerEntry): number {
   return entry.tallyEvents.reduce((sum, e) => sum + e.amount, 0);
 }
 
+/** Tally points grouped by category id; uncategorized events land under ''. */
+export function tallyByCategory(entry: PlayerEntry): Record<string, number> {
+  const sums: Record<string, number> = {};
+  for (const event of entry.tallyEvents) {
+    const key = event.categoryId ?? '';
+    sums[key] = (sums[key] ?? 0) + event.amount;
+  }
+  return sums;
+}
+
 /** Full breakdown for one player: per-field points, tally sum, and total. */
 export function computeScore(
   def: ResolvedDefinition,

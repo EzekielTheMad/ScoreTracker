@@ -12,9 +12,11 @@ export { SYNC_ENABLED } from './config';
 export {
   getCurrentUser,
   onAuthChange,
+  requestPasswordReset,
   signIn,
   signOut,
   signUp,
+  updatePassword,
 } from './client';
 
 export type SyncResult = { ok: true } | { ok: false; error: string };
