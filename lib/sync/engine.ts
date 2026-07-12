@@ -9,7 +9,7 @@ import { db } from '../db/db';
  * inside the payload, never as row removals.
  */
 
-export type Kind = 'player' | 'collection' | 'session';
+export type Kind = 'player' | 'collection' | 'session' | 'customGame';
 
 export interface SyncRecord {
   kind: Kind;
@@ -31,6 +31,7 @@ const KIND_TABLES: [Kind, () => Dexie.Table<{ id: string; updatedAt: number; del
   ['player', () => db.players],
   ['collection', () => db.collection],
   ['session', () => db.sessions],
+  ['customGame', () => db.customGames],
 ];
 
 /**

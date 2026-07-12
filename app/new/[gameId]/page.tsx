@@ -1,17 +1,23 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { getDefinition } from "@/lib/catalog";
 import { db } from "@/lib/db/db";
-import { addGameToCollection, createPlayer, createSession } from "@/lib/db/repo";
+import {
+  addGameToCollection,
+  createPlayer,
+  createSession,
+  getAnyDefinition,
+} from "@/lib/db/repo";
 import { resolveDefinition } from "@/lib/engine/resolve";
 
 export default function NewGamePage() {
   const { gameId } = useParams<{ gameId: string }>();
   const router = useRouter();
-  const def = getDefinition(gameId);
+  // Bundled games resolve instantly; custom ones live in IndexedDB.
+  const def = useLiveQuery(() => getAnyDefinition(gameId), [gameId]);
 
   const players = useLiveQuery(
     () => db.players.orderBy("createdAt").filter((p) => !p.deletedAt).toArray(),
@@ -49,13 +55,8 @@ export default function NewGamePage() {
     setNewName("");
   }
 
-  // Expansions can raise the player cap (Skullport allows a 6th player).
-  const { maxPlayers } = resolveDefinition(def, expansionIds);
-  const canStart =
-    selected.length >= def.minPlayers && selected.length <= maxPlayers && !starting;
-
   async function start() {
-    if (!canStart || !players) return;
+    if (!def || !players || starting) return;
     setStarting(true);
     // Remember expansion choices as the default for next time.
     await addGameToCollection(def.id, expansionIds);
@@ -68,12 +69,36 @@ export default function NewGamePage() {
     router.replace(`/play/${session.id}`);
   }
 
+  if (def === undefined) return null;
+  if (def === null) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center gap-3 p-8">
+        <p className="text-ink-dim">This game doesn’t exist on this device.</p>
+        <Link href="/" className="text-accent font-bold">
+          Go home
+        </Link>
+      </main>
+    );
+  }
+
+  // Expansions can raise the player cap (Skullport allows a 6th player).
+  const { maxPlayers } = resolveDefinition(def, expansionIds);
+  const canStart =
+    selected.length >= def.minPlayers && selected.length <= maxPlayers && !starting;
+
   return (
     <main className="flex-1 pb-40 pt-safe px-safe">
       <div className="px-4 pt-4 max-w-lg mx-auto">
-        <button onClick={() => router.back()} className="text-ink-dim text-sm mb-2 py-2">
-          ‹ Back
-        </button>
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.back()} className="text-ink-dim text-sm mb-2 py-2">
+            ‹ Back
+          </button>
+          {def.id.startsWith("custom-") && (
+            <Link href={`/custom/${def.id}`} className="text-accent text-sm py-2">
+              ✎ Edit game
+            </Link>
+          )}
+        </div>
         <h1 className="text-2xl font-bold mb-4">{def.name}</h1>
 
         {def.expansions.length > 0 && (

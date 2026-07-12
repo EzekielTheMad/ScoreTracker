@@ -64,9 +64,10 @@ describe('runSync', () => {
   it('merges last-write-wins in both directions', async () => {
     const remote = new FakeRemote();
     // Remote has a newer rename of p1 and an older rename of p2.
+    const asData = (p: Player) => p as unknown as Record<string, unknown>;
     await remote.upsert([
-      { kind: 'player', id: 'p1', data: player('p1', 'Ana (remote)', 6000), updatedAt: 6000, deletedAt: null },
-      { kind: 'player', id: 'p2', data: player('p2', 'Ben (remote)', 1000), updatedAt: 1000, deletedAt: null },
+      { kind: 'player', id: 'p1', data: asData(player('p1', 'Ana (remote)', 6000)), updatedAt: 6000, deletedAt: null },
+      { kind: 'player', id: 'p2', data: asData(player('p2', 'Ben (remote)', 1000)), updatedAt: 1000, deletedAt: null },
     ]);
     await db.players.bulkAdd([
       player('p1', 'Ana (local)', 5000),

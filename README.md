@@ -35,8 +35,20 @@ runs the right math from a **versioned game definition** (`lib/catalog/`):
   when definitions change later.
 
 Two data concepts: the bundled **catalog** of definitions ships in the
-build; the per-user **collection** is the games you've added from it.
-Players are saved profiles, not logins.
+build (7 Wonders, Carcassonne, Lords of Waterdeep, Azul, Splendor,
+Ticket to Ride, Wingspan, Catan, Dominion); the per-user **collection**
+is the games you've added from it. Players are saved profiles, not
+logins.
+
+Users can also author their own **custom games** (`app/custom/`, stored
+in Dexie and synced): a data-only builder — name, mode, numeric score
+categories with per-item math, tally quick-buttons and categories.
+Custom definitions run through the same engine, snapshot, and history
+paths as bundled ones; they can't declare calculators (those are code),
+which is the one deliberate limit. Both bundled and custom definitions
+are checked by `validateDefinition` (`lib/engine/validate.ts`) — the
+catalog test fails CI on a bad bundled game, the builder blocks a bad
+custom one.
 
 ## Sync
 

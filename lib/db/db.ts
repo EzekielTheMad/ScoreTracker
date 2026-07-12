@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { PlayerEntry, ResolvedDefinition } from '../engine/types';
+import type { GameDefinition, PlayerEntry, ResolvedDefinition } from '../engine/types';
 
 /** A saved player profile — not a login, just a name that persists across nights. */
 export interface Player {
@@ -47,6 +47,17 @@ export interface Session {
   deletedAt?: number;
 }
 
+/**
+ * A user-authored game definition (data-only: no calculators, no
+ * expansions). Works everywhere a bundled definition does; `version`
+ * bumps on every edit so session snapshots stay honest.
+ */
+export interface CustomGame extends GameDefinition {
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 /** Key-value store for sync bookkeeping (cursor timestamps). */
 export interface SyncMeta {
   key: string;
@@ -57,6 +68,7 @@ class ScoreTrackerDB extends Dexie {
   players!: Table<Player, string>;
   collection!: Table<CollectionItem, string>;
   sessions!: Table<Session, string>;
+  customGames!: Table<CustomGame, string>;
   syncMeta!: Table<SyncMeta, string>;
 
   constructor() {
@@ -84,6 +96,13 @@ class ScoreTrackerDB extends Dexie {
           s.updatedAt ??= s.finishedAt ?? s.startedAt;
         });
       });
+    this.version(3).stores({
+      players: 'id, name, createdAt, updatedAt',
+      collection: 'id, addedAt, updatedAt',
+      sessions: 'id, gameId, status, startedAt, finishedAt, updatedAt',
+      customGames: 'id, createdAt, updatedAt',
+      syncMeta: 'key',
+    });
   }
 }
 

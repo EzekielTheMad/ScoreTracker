@@ -10,6 +10,8 @@ import { addGameToCollection } from "@/lib/db/repo";
 export default function HomePage() {
   const collection =
     useLiveQuery(() => db.collection.filter((c) => !c.deletedAt).toArray(), []) ?? [];
+  const customGames =
+    useLiveQuery(() => db.customGames.filter((g) => !g.deletedAt).toArray(), []) ?? [];
   const active = useLiveQuery(
     () =>
       db.sessions
@@ -61,8 +63,11 @@ export default function HomePage() {
           )}
           <div className="grid gap-2">
             {collection.map((item) => {
-              const def = CATALOG.find((g) => g.id === item.gameId);
+              const def =
+                CATALOG.find((g) => g.id === item.gameId) ??
+                customGames.find((g) => g.id === item.gameId);
               if (!def) return null;
+              const isCustom = item.gameId.startsWith("custom-");
               return (
                 <Link
                   key={item.id}
@@ -70,7 +75,14 @@ export default function HomePage() {
                   className="flex items-center justify-between bg-card border border-edge rounded-2xl p-4 active:scale-[0.99]"
                 >
                   <div>
-                    <div className="text-lg font-bold">{def.name}</div>
+                    <div className="text-lg font-bold">
+                      {def.name}
+                      {isCustom && (
+                        <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide bg-card-raised border border-edge rounded px-1.5 py-0.5 text-ink-dim align-middle">
+                          Custom
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-ink-dim">
                       {def.minPlayers}–{def.maxPlayers} players
                       {def.expansions.length > 0 &&
@@ -86,30 +98,40 @@ export default function HomePage() {
           </div>
         </section>
 
-        {available.length > 0 && (
-          <section>
-            <h2 className="text-sm font-semibold text-ink-dim uppercase tracking-wide mb-2">
-              Catalog
-            </h2>
-            <div className="grid gap-2">
-              {available.map((def) => (
-                <button
-                  key={def.id}
-                  onClick={() => addToCollection(def.id)}
-                  className="flex items-center justify-between bg-card/50 border border-dashed border-edge rounded-2xl p-4 text-left active:scale-[0.99]"
-                >
-                  <div>
-                    <div className="text-lg font-semibold">{def.name}</div>
-                    <div className="text-sm text-ink-dim">
-                      {def.minPlayers}–{def.maxPlayers} players
-                    </div>
+        <section>
+          <h2 className="text-sm font-semibold text-ink-dim uppercase tracking-wide mb-2">
+            Catalog
+          </h2>
+          <div className="grid gap-2">
+            {available.map((def) => (
+              <button
+                key={def.id}
+                onClick={() => addToCollection(def.id)}
+                className="flex items-center justify-between bg-card/50 border border-dashed border-edge rounded-2xl p-4 text-left active:scale-[0.99]"
+              >
+                <div>
+                  <div className="text-lg font-semibold">{def.name}</div>
+                  <div className="text-sm text-ink-dim">
+                    {def.minPlayers}–{def.maxPlayers} players
                   </div>
-                  <span className="text-accent font-bold text-sm">＋ Add</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+                </div>
+                <span className="text-accent font-bold text-sm">＋ Add</span>
+              </button>
+            ))}
+            <Link
+              href="/custom/new"
+              className="flex items-center justify-between bg-card/50 border border-dashed border-accent/40 rounded-2xl p-4 active:scale-[0.99]"
+            >
+              <div>
+                <div className="text-lg font-semibold">Create your own</div>
+                <div className="text-sm text-ink-dim">
+                  Any game with numeric scoring — sheet, tally, or both
+                </div>
+              </div>
+              <span className="text-accent font-bold text-sm">＋ New</span>
+            </Link>
+          </div>
+        </section>
       </div>
       <BottomNav />
     </main>
